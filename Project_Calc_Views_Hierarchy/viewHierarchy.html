@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<!-- // Software licensed by the MIT License of Open Source (https://opensource.org/licenses/MIT) -->
+<meta charset="utf-8">
+<style> /* set the CSS */
+    
+.node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 3px;
+}
+
+.node text { font: 12px sans-serif; }
+
+.node--internal text {
+  text-shadow: 0 1px 0 #fff, 0 -1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff;
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 2px;
+}
+
+/* Start by setting display:none to make this hidden.
+   Then we position it in relation to the viewport window
+   with position:fixed. Width, height, top and left speak
+   for themselves. Background we set to 80% white with
+   our animation centered, and no-repeating */
+.modal {
+    display:    none;
+    position:   fixed;
+    z-index:    1000;
+    top:        0;
+    left:       0;
+    height:     100%;
+    width:      100%;
+    background: rgba( 255, 255, 255, .8 ) 
+                url('http://i.stack.imgur.com/FhHRx.gif') 
+                50% 50% 
+                no-repeat;
+}
+
+/* When the body has the loading class, we turn
+   the scrollbar off with overflow:hidden */
+body.loading {
+    overflow: hidden;   
+}
+
+/* Anytime the body has the loading class, our
+   modal element will be visible */
+body.loading .modal {
+    display: block;
+}
+
+.obscure { 
+  position: absolute !important; 
+  clip: rect(1px 1px 1px 1px); /* IE6, IE7 */ 
+  clip: rect(1px, 1px, 1px, 1px); 
+} 
+
+</style>
+
+<body>
+
+
+<!-- load the d3.js library -->     
+<script src="http://d3js.org/d3.v4.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<form onsubmit="return loadGraph()">
+  View Name: <br>
+  <input type="text" id="viewName"">
+  <label class="obscure" id="errorMsg" > Error, check the name of the view, please </label>
+  <br> 
+  <input type="button" id="btnUpdate" value="Generate Hierarchy" onclick="return loadGraph()">
+</form>
+<div class="modal"><!-- Place at bottom of page --></div>
+<script>
+$body = $("body");
+
+$(document).on({
+    ajaxStart: function() { $body.addClass("loading");    },
+     ajaxStop: function() { $body.removeClass("loading"); }    
+});
+
+// $('#btnUpdate').click(function() {
+function loadGraph(){
+  var req = {}
+  req.object = document.getElementById('viewName').value
+  $.ajax({
+    type: 'GET',
+    url: '/calcViewHierarchy',
+    cache: true,
+    data: req,
+    complete: function (data){
+      d3.json("/resultCalcViewHierarchy",function(error,treeData){
+        if (error)  throw error
+        
+        // remove the graph if it exists already
+        if (document.getElementById('graph'))
+          document.getElementById('graph').remove();
+
+        if(!treeData.children){
+          document.getElementById('errorMsg').classList.remove('obscure');
+        } else {
+           if (!document.getElementById('errorMsg').classList.contains('obscure'))
+              document.getElementById('errorMsg').classList.add('obscure');
+          // set the dimensions and margins of the diagram
+          var margin = {top: 20, right: 90, bottom: 30, left: 90},
+              width = 660 - margin.left+(treeData.children.length*100) - margin.right,
+              height = 500 - margin.top+(treeData.children.length*80) - margin.bottom;
+
+          // declares a tree layout and assigns the size
+          var treemap = d3.tree()
+              .size([height, width]);
+
+          //  assigns the data to a hierarchy using parent-child relationships
+          var nodes = d3.hierarchy(treeData, function(d) {
+              return d.children;
+            });
+
+          // maps the node data to the tree layout
+          nodes = treemap(nodes);
+
+          // append the svg object to the body of the page
+          // appends a 'group' element to 'svg'
+          // moves the 'group' element to the top left margin
+          var svg = d3.select("body").append("svg")
+                .attr("width", width + (margin.left+300) + margin.right)
+                .attr("height", height + (margin.top+300) + margin.bottom)
+                .attr("id","graph"),
+              g = svg.append("g")
+                .attr("transform",
+                      "translate(" + (margin.left+100) + "," + margin.top + ")");
+
+          // adds the links between the nodes
+          var link = g.selectAll(".link")
+              .data( nodes.descendants().slice(1))
+            .enter().append("path")
+              .attr("class", "link")
+              .style("stroke", function(d) { return d.data.level; })
+              .attr("d", function(d) {
+                 return "M" + d.y + "," + d.x
+                   + "C" + (d.y + d.parent.y) / 2 + "," + d.x
+                   + " " + (d.y + d.parent.y) / 2 + "," + d.parent.x
+                   + " " + d.parent.y + "," + d.parent.x;
+                 });
+
+          // adds each node as a group
+          var node = g.selectAll(".node")
+              .data(nodes.descendants())
+            .enter().append("g")
+              .attr("class", function(d) { 
+                return "node" + 
+                  (d.children ? " node--internal" : " node--leaf"); })
+              .attr("transform", function(d) { 
+                return "translate(" + d.y + "," + d.x + ")"; });
+
+          // adds the circle to the node
+          node.append("circle")
+            .attr("r", function(d) { return d.data.value; })
+            .style("stroke", function(d) { return d.data.type; })
+            .style("fill", function(d) { return d.data.level; });
+            
+          // adds the text to the node
+          node.append("text")
+            .attr("dy", ".35em")
+            .attr("x", function(d) { return d.children ? 
+              (d.data.value + 4) * -1 : d.data.value + 4 })
+            .style("text-anchor", function(d) { 
+              return d.children ? "end" : "start"; })
+            .text(function(d) { return d.data.name; });
+        }
+      })
+    }
+  });
+
+  return false;
+}
+
+</script>
+</body>
