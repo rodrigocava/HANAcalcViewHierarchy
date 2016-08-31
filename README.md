@@ -9,7 +9,7 @@ This simple development generates a graph with all the dependencies of SAP HANA'
     - port
     - user
     - password
-  2. Run calcViewHierarchy.py local server with the comand: ``` python3 calcViewHierarchy.py ```
+  2. At a python terminal, go to the project folder and run calcViewHierarchy.py local server with the comand: ``` python3 calcViewHierarchy.py ```
   3. Open in your browser the following link: [http://localhost:5000/viewHierarchy](http://localhost:5000/viewHierarchy)
   4. Enter the full name of a Calculation View (< package >.< subpackage >/< viewName >) at the textInput
   5. Hit "Enter" or press the "Generate Hierarchy" button. The hierarchy graph should appear bellow the button
