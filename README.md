@@ -1,7 +1,7 @@
 # HANA Calculation View Hierarchy Graph
 Creates a graph visualization to show the hierarchy dependencies of a SAP HANA Calculation View.
 
-This simple development generates a graph with all the dependencies of SAP HANA's Calculation View. It can be usefull to check dependencies privileges, or simply to check how many views makeup a full structure of information.
+This simple development generates a graph with all the dependencies of SAP HANA's Calculation View. It can be usefull to check dependencies privileges, or simply to check how many views and tables makeup a full structure of information.
 
 ## Utilization
   1. Edit the calcViewHierarchy.py file and add your HANA DB information (the varibles at the top, after the imports): 
